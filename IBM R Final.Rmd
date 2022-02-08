@@ -1,0 +1,165 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+install.packages('httr')
+install.packages('rvest')
+
+library(httr)
+library(rvest)
+```
+
+
+
+```{r}
+## Task 1
+
+wiki_base_url<- ("https://en.wikipedia.org/wiki/Template:COVID-19_pandemic_data")
+queary_params <- list('title-template:COVID-19_testing_by_country')
+response<-GET(wiki_base_url)
+get_wiki_covid19_page<-function()(return(response))
+get_wiki_covid19_page()
+```
+```{r}
+## Task 2
+# Get the root html node from the http response in task 1 
+root_node <-read_html("https://en.wikipedia.org/wiki/Template:COVID-19_pandemic_data")
+root_node
+
+```
+```{r}
+table_node <- html_node(root_node, "table")
+table_node
+COVID_data_frame <- html_table(table_node)
+COVID_data_frame
+```
+
+
+```{r}
+## Task3
+summary(COVID_data_frame)
+```
+
+
+```{r}
+preprocess_covid_data_frame <- function(COVID_data_frame) {
+    
+     # Remove the last row
+    table_data_frame <- table_data_frame[1:172, ]
+    # We dont need the Units and Ref columns, so can be removed 
+    table_data_frame["Ref."] <- NULL
+    table_data_frame["Units[b]"] <- NULL
+     # Renaming the columns
+    names(table_data_frame) <- c("country", "date", "tested", "confirmed", "confirmed.tested.ratio", "tested.population.ratio", "confirmed.population.ratio")   
+   
+    
+       # Convert column data types
+    table_data_frame$country <- as.factor(table_data_frame$country)
+    table_data_frame$date <- as.factor(table_data_frame$date)
+    table_data_frame$tested <- as.numeric(gsub(",","",table_data_frame$tested))
+    table_data_frame$confirmed <- as.numeric(gsub(",","",table_data_frame$confirmed))
+    table_data_frame$confirmed.tested.ratio <- as.numeric(gsub(",","",table_data_frame$`confirmed.tested.ratio`))
+    table_data_frame$tested.population.ratio <- as.numeric(gsub(",","",table_data_frame$`tested.population.ratio`))
+    table_data_frame$confirmed.population.ratio <- as.numeric(gsub(",","",table_data_frame$`confirmed.population.ratio`))
+    
+    return(covid_data_frame)
+}
+```
+
+
+```{r}
+summary(COVID_data_frame)
+```
+
+```{r}
+output<-(preprocess_covid_data_frame)
+output
+```
+
+
+```{r}
+write.csv(COVID_data_frame)
+```
+
+
+```{r}
+# Get working directory
+wd <- getwd()
+# Get exported 
+file_path <-paste(wd, sep=,"/covid.csv")
+# File path
+print(file_path)
+file.exists(file_path)
+```
+
+
+```{r}
+##Task 4
+# Read covid_data_frame_csv from the csv file
+library(readr)
+covid_data_frame_csv <- read_csv("covid.csv")
+# Get the 5th to 10th rows, with two "country" "confirmed" column
+covid_data_frame_csv[5:10, c("country","confirmed")]
+```
+
+```{r}
+## Task 5
+# Get the total confirmed cases worldwide
+sum(covid_data_frame_csv$confirmed)
+# Get the total tested cases worldwide
+sum(covid_data_frame_csv$tested)
+# Get the positive ratio (confirmed / tested)
+ratio <- (sum(covid_data_frame_csv$confirmed)/sum(covid_data_frame_csv$tested))
+ratio
+```
+
+
+```{r}
+## Task 6
+
+# Get the `country` column
+country_column <- as.factor(covid_data_frame_csv['country'])
+# Check its class (should be Factor)
+class(covid_data_frame_csv$country)
+# Conver the country column into character so that you can easily sort them
+covid_data_frame_csv$country <- as.character(covid_data_frame_csv$country)
+# Sort the countries AtoZ
+head(sort(covid_data_frame_csv$country))
+# Sort the countries ZtoA
+country_character_desc <- sort(covid_data_frame_csv$country, decreasing = TRUE)
+# Print the sorted ZtoA list
+print(country_character_desc)
+```
+
+
+```{r}
+## Task 7
+grep("United.+", country_column, value = TRUE)
+```
+
+
+```{r}
+##Task 8
+
+two_countries <- covid_data_frame_csv[99:100, c("country","confirmed", "confirmed.population.ratio")]
+two_countries
+```
+
+
+```{r}
+## Task 9
+if (covid_data_frame_csv[99, "confirmed.population.ratio"] > covid_data_frame_csv [100, "confirmed.population.ratio"]) {print("Malaysia")} else 
+{print ("Maldovia")
+}
+```
+
+
+```{r}
+##Task 10
+covid_data_frame_csv[covid_data_frame_csv$confirmed.population.ratio <0.01, ]
+
+```
+
